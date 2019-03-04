@@ -1,0 +1,61 @@
+FROM ubuntu:18.04 
+MAINTAINER 9pat@github 
+ARG DEBIAN_FRONTEND=noninteractive
+RUN \
+  echo "Asia/Bangkok" > /etc/timezone && \
+  apt-get -y update && apt-get -y upgrade && \
+  apt-get -y install apt-utils && \
+  apt-get -o Dpkg::Options::=--force-confdef -y install nano curl netcat wget telnet bzip2 ssmtp locales && \
+  locale-gen en_GB.utf8 en_US.utf8 
+RUN \
+  apt-get update && \
+  apt-get install -o Dpkg::Options::=--force-confdef -y apache2 cronolog build-essential git apache2-dev poppler-utils && \
+  a2enmod deflate rewrite ssl headers macro cgi expires include && \
+  echo "ServerName 172.17.0.2" >> /etc/apache2/apache2.conf && \
+  service apache2 restart 
+RUN \
+  apt-get update && \
+  apt-get install -y software-properties-common && \
+  apt-get install -y imagemagick graphicsmagick tzdata && \
+  apt-get install -y php7.2 libapache2-mod-php7.2 php7.2-apcu php7.2-bcmath php7.2-bz2 php7.2-cgi php7.2-cli php7.2-common php7.2-curl php7.2-dba php7.2-dev php7.2-fpm php7.2-gd php7.2-gmp php7.2-imap php7.2-intl php7.2-json php7.2-ldap php7.2-mbstring php7.2-mysql php7.2-odbc php7.2-opcache php7.2-pgsql php7.2-soap php7.2-snmp php7.2-sqlite php7.2-tidy php7.2-xml php7.2-xmlrpc php7.2-xsl php7.2-zip && \
+  apt-get install -y php-gnupg php-imagick php-mongodb php-fxsl && \
+  sed -i -e 's/max_execution_time = 30/max_execution_time = 180/g' /etc/php/7.2/apache2/php.ini && \
+  sed -i -e 's/upload_max_filesize = 2M/upload_max_filesize = 50M/g' /etc/php/7.2/apache2/php.ini && \
+  sed -i -e 's/post_max_size = 8M/post_max_size = 50M/g' /etc/php/7.2/apache2/php.ini && \
+  sed -i -e 's/memory_limit = 128M/memory_limit = 512M/g' /etc/php/7.2/apache2/php.ini && \
+  sed -i -e 's/DirectoryIndex index.html index.cgi index.pl index.php index.xhtml index.htm/DirectoryIndex index.php index.html index.cgi index.pl index.xhtml index.htm/g' /etc/apache2/mods-available/dir.conf && \
+  service apache2 restart
+RUN \
+  apt-get update && \
+  apt-get install -y gcc make autoconf libc-dev pkg-config && \
+  apt-get install -y php7.2-dev && \
+  apt-get -y install libmcrypt-dev && \
+  pecl install mcrypt-1.0.1 && \
+  service apache2 restart 
+RUN \
+  curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
+  curl https://packages.microsoft.com/config/ubuntu/18.04/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
+  apt-get update && \
+  ACCEPT_EULA=Y apt-get install -y msodbcsql17 && \
+  apt-get install -y unixodbc-dev && \
+  pear config-set php_ini `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"` system && \
+  pecl install sqlsrv && \
+  pecl install pdo_sqlsrv && \
+  echo "extension=sqlsrv.so" >> /etc/php/7.2/apache2/php.ini && \
+  echo "extension=pdo_sqlsrv.so" >> /etc/php/7.2/apache2/php.ini && \
+  service apache2 restart 
+RUN \
+  apt-get install -y build-essential php7.2-dev libaio1 && \
+  wget https://github.com/9pat/docker/php7.2/oracle-instantclient12.2-basic_12.2.0.1.0-2_amd64.deb && \
+  wget https://github.com/9pat/docker/php7.2/oracle-instantclient12.2-devel_12.2.0.1.0-2_amd64.deb && \
+  dpkg -i oracle-instantclient12.2-basic_12.2.0.1.0-2_amd64.deb && \
+  dpkg -i oracle-instantclient12.2-devel_12.2.0.1.0-2_amd64.deb && \
+  pecl install oci8  && \
+  echo "extension=oci8.so" >> /etc/php/7.2/apache2/php.ini && \
+  echo 'PATH=”/tmp/pear/temp/pear-build-rootoyevaF/oci8-2.2.0/modules:/usr/lib/oracle/12.2/client64:/usr/lib/oracle/12.2/client64/lib”' >> /etc/apache2/envvars && \
+  echo 'export LD_LIBRARY_PATH=/usr/lib/oracle/12.2/client64/lib' >> /etc/apache2/envvars && \
+  echo 'export ORACLE_HOME=/usr/lib/oracle/12.2/client64' >> /etc/apache2/envvars && \
+  apt-get remove -y software-properties-common && \
+  apt-get clean -y && \
+  apt-get autoremove -y && \
+  rm -rf /var/lib/apt/lists/* 
