@@ -1,0 +1,134 @@
+=============
+INTRO TO DOCKER
+=============
+
+แนะนำ Environment การเซทเครื่องทดสอบ
+
+	Standalone Docker - Single machine
+	
+		+ Ubuntu Server + Docker 
+		+ [optional] Docker for Windows10 
+			- enable Hyper-V ใน windows 
+			- จะไม่สามารถใช้งาน vitualization ตระกูลอื่นได้ (VM, VirtualBox)
+		+ [optional] Docker toolbox  
+			- ไม่ต่างอะไรกับ Virtualbox linux docker แค่ติดตั้งง่ายกว่าไม่ต้องวุ่นวายกับ vitualbox 
+
+ติดตั้ง docker บน ubuntu server 
+
+	$ sudo apt update
+	$ sudo apt upgrade
+	$ sudo apt install docker.io
+	$ sudo docker version
+	$ sudo docker info
+	
+				
+		///// USING DOCKER BEHIND PROXY FIREWALL 
+		
+		เพิ่ม proxy conf ให้กับ docker daemon
+
+			$ sudo mkdir nano /etc/systemd/system/docker.service.d/
+			$ sudo nano /etc/systemd/system/docker.service.d/http-proxy.conf
+			
+				----------------------------------------------------------------------
+				[Service]
+				Environment="HTTP_PROXY=http://proxy:port/"
+				Environment="HTTPS_PROXY=http://proxy:port/"
+				Environment="NO_PROXY=localhost,127.0.0.1"
+				----------------------------------------------------------------------
+				
+			$ sudo systemctl daemon-reload
+			$ sudo docker info
+
+			////////////////////////////////////////////////
+			
+	
+Docker architecture
+
+	Registry(hub.docker) -> Image -> Container
+	[img]docker-architecture.png
+
+Download Images 
+	https://hub.docker.com
+		Official Images, Public repository, tags 
+		
+	docker search
+	docker pull
+	docker images
+	docker rmi
+	docker save
+	docker load
+	
+การสร้าง (deploy) container จาก images 
+	docker run  และ basic parameter
+	-d	: detached mode ทำงานในแบบ background
+	-it : เริ่มต้น service ข้างใน container แล้วคงไว้
+	-h --name	: ระบุชื่อ container
+	-e --env : ส่งค่า environment ต่างๆ ขึ้นอยู่กับแต่ละ service ใน container นั้นๆ
+		--env http_proxy="http://proxy.somewebsite.com:8080"
+	-p : port mapping ข้างนอก:ข้างใน 
+	-v : volumn mapping /myfolder/myfiles:/container/path/
+	--dns : ระบุค่า dns 
+	--hostname : ระบุชื่อ hostname
+	
+การตรวจสอบสถานะ container
+	docker ps, ps -a 
+	docker start, stop, restart
+	docker rm
+	docker logs
+	docker stats
+	docker inspect
+	docker container ls 
+	docker network ls
+	docker netwok inspect bridge
+	
+การแก้ไชและปรับแต่งระบบงานภายใน container
+	docker exec 
+		docker exec -it [containerID] /bin/bash
+	docker commit
+	docker import file.tar							// import file.tar เข้ามาเป็น image
+	docker export [containerID] > file.tar	// export docker container ออกมาเป็น file tar
+	docker save busybox > busybox.tar	// save docker image ออกมาเป็น file.tar
+	docker load < file.tar							// load file.tar กลับเข้ามาเป็น docker image
+	docker cp
+		docker cp /host/path/file [containerID]:/usr/local
+		docker cp [containerID]:/usr/local/file /host/path
+			
+การสร้าง custom images ใช้งานเอง 
+	Dockerfile
+	docker build -t <Custom name> -f <Dockerfile location> .
+
+===========================================
+	
+(Optional)	
+การ deploy Environmental Stack ด้วย docker-compose
+	install docker-compose
+		ex : docker-compose-wp-stack-deploy.txt 
+	docker-compose -f </path/to/file.yml> up -d --build 
+	
+===========================================	
+	
+(Optional)	
+การติดตั้ง portainer - docker GUI ในแบบ container 
+
+	docker pull portainer/portainer
+	
+	docker volume create --driver local \
+		--opt device=:/path/to/dir \
+		--name data-portainer 
+		
+	docker run -d -p 9000:9000 --name portainer \
+		--dns 10.20.222.22 \
+		--restart always \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v data-portainer:/data \
+		-e HTTP_PROXY=http://proxy:port \
+		-e HTTPS_PROXY=http://proxy:port \
+		portainer/portainer
+
+	** user : admin / pass : changeme 
+
+
+
+
+
+
